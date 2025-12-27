@@ -8,7 +8,7 @@
 #include "claude.h"
 
 /*
- * Perform an HTTP request to the proxy server.
+ * Perform an HTTP request to the server.
  *
  * method:    HTTP method (GET, POST, etc.)
  * path:      Request path (e.g., "/start")

@@ -17,8 +17,8 @@ static void cmd_help(void)
     printf("  /status           - Show connection status\n");
     printf("  /server ip:port   - Set server address\n");
     printf("  /log [on|off|view]- Logging: on/off or view log file\n");
-    printf("  /download <remote> <local> - Download file from proxy\n");
-    printf("  /upload <local> <remote>   - Upload file to proxy\n");
+    printf("  /download <remote> <local> - Download file from server\n");
+    printf("  /upload <local> <remote>   - Upload file to server\n");
     printf("  /clear            - Clear screen\n");
     printf("  /quit             - Exit program\n");
     printf("\n");
@@ -28,7 +28,7 @@ static void cmd_server(const char *addr)
 {
     char addr_copy[128];
     char *colon;
-    char new_ip[64];
+    char new_ip[128];
     int new_port;
 
     strncpy(addr_copy, addr, sizeof(addr_copy) - 1);

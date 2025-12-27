@@ -4,6 +4,7 @@
 *.o
 *.pdb
 *.dll
+*.res
 
 # .NET
 bin/
@@ -28,3 +29,4 @@ __pycache__/
 *.pyc
 
 *.iso
+*.img

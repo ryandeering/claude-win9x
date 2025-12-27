@@ -70,7 +70,7 @@ int transfer_download(const char *remote_path, const char *local_path)
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = inet_addr(g_state.server_ip);
-    server.sin_port = htons(PORT_FILE_DOWNLOAD);
+    server.sin_port = htons((u_short)g_state.download_port);
 
     if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
         log_error("download", "Could not connect to file server");
@@ -221,7 +221,7 @@ int transfer_upload(const char *local_path, const char *remote_path)
 
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = inet_addr(g_state.server_ip);
-    server.sin_port = htons(PORT_FILE_UPLOAD);
+    server.sin_port = htons((u_short)g_state.upload_port);
 
     if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
         log_error("upload", "Could not connect to upload server");
@@ -230,7 +230,8 @@ int transfer_upload(const char *local_path, const char *remote_path)
         return -1;
     }
 
-    snprintf(header, sizeof(header), "%s\n%s\n%lu\n", API_KEY, remote_path, file_size);
+    snprintf(header, sizeof(header), "%s\n%s\n%lu\n", API_KEY, remote_path,
+             file_size);
     if (send(sock, header, (int)strlen(header), 0) < 0) {
         log_error("upload", "Failed to send header");
         closesocket(sock);

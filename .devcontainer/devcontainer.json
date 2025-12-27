@@ -1,5 +1,5 @@
 {
-  "name": "ClaudeWin9xNt",
+  "name": "ClaudeWin9x",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -16,5 +16,5 @@
       ]
     }
   },
-  "postCreateCommand": "dotnet restore server/ClaudeWin9xNt/ClaudeWin9xNtServer.csproj"
+  "postCreateCommand": "dotnet restore server/ClaudeWin9x/ClaudeWin9xServer.csproj"
 }

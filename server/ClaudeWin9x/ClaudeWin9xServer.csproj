@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <RuntimeIdentifiers>linux-x64;linux-arm64;osx-x64;osx-arm64;win-x64;win-arm64</RuntimeIdentifiers>
+
+    <AssemblyName>ClaudeWin9x-Server</AssemblyName>
+    <Product>Claude Code Win9x/NT Server</Product>
+    <Company>Ryan Deering</Company>
+    <Authors>Ryan Deering</Authors>
+    <Copyright>Ryan Deering</Copyright>
+    <Description>Bridge server for Claude Code on Windows 9x/NT systems</Description>
+
+    <!-- Placeholder icon by aconfuseddragon: https://aconfuseddragon.itch.io/windows-95-calming -->
+    <ApplicationIcon>..\..\build\icons\server.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Speed</OptimizationPreference>
+
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <Http3Support>false</Http3Support>
+    <MetricsSupport>false</MetricsSupport>
+  </PropertyGroup>
+
+</Project>

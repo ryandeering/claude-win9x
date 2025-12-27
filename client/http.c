@@ -91,7 +91,8 @@ HttpResult http_request(const char *method, const char *path, const char *body,
 
         ioctlsocket(sock, FIONBIO, &nonblocking);
 
-        connect_result = connect(sock, (struct sockaddr *)&server, sizeof(server));
+        connect_result =
+            connect(sock, (struct sockaddr *)&server, sizeof(server));
 
         if (connect_result < 0 && WSAGetLastError() != WSAEWOULDBLOCK) {
             closesocket(sock);

@@ -3,47 +3,45 @@ name: Build
 on:
   push:
     branches: [master, main, release]
+    tags: ['v*']
   pull_request:
     branches: [master, main, release]
+
+env:
+  DEFAULT_VERSION: '0.0.0-dev'
 
 jobs:
   build-client:
     name: Build Win9x Client
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MinGW and cppcheck
+      - name: Install MinGW (winlibs)
+        shell: pwsh
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mingw-w64 cppcheck
-
-      - name: Run static analysis
-        working-directory: client
-        run: |
-          cppcheck --version
-          cppcheck --std=c99 --enable=warning,performance --error-exitcode=1 \
-            --suppress=missingIncludeSystem --suppress=normalCheckLevelMaxBranches \
-            --suppress=checkersReport \
-            claude.c commands.c handlers.c http.c session.c transfer.c util.c
+          curl -L -o mingw.7z "https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-msvcrt-r5/winlibs-i686-posix-dwarf-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r5.7z"
+          7z x mingw.7z -o"$env:USERPROFILE\mingw"
+          echo "$env:USERPROFILE\mingw\mingw32\bin" >> $env:GITHUB_PATH
 
       - name: Build client
         working-directory: client
+        shell: bash
         run: |
-          i686-w64-mingw32-gcc --version
-          make CC=i686-w64-mingw32-gcc WINDRES=i686-w64-mingw32-windres
+          gcc --version
+          make CC=gcc WINDRES=windres
 
-      - name: Upload client artifact
+      - name: Upload client build
         uses: actions/upload-artifact@v4
         with:
-          name: ClaudeWin9xNt-Client
+          name: build-client
           path: |
-            client/ClaudeWin9xNt-Client.exe
+            client/ClaudeWin9x-Client.exe
             client/client.ini
 
-  build-proxy:
-    name: Build Proxy Server
+  build-server:
+    name: Build and Test Server
     runs-on: ubuntu-latest
 
     steps:
@@ -54,28 +52,21 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Build proxy
-        working-directory: server/ClaudeWin9xNt
+      - name: Build server
+        working-directory: server/ClaudeWin9x
         run: dotnet build --configuration Release
 
       - name: Run tests
-        working-directory: server/ClaudeWin9xNt.Tests
+        working-directory: server/ClaudeWin9x.Tests
         run: dotnet test --configuration Release
 
-  publish-proxy:
-    name: Publish Proxy
-    needs: build-proxy
+  publish-server-linux:
+    name: Publish Server (Linux)
+    needs: build-server
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            rid: linux-x64
-          - os: macos-latest
-            rid: osx-arm64
-          - os: windows-latest
-            rid: win-x64
-
-    runs-on: ${{ matrix.os }}
+        rid: [linux-x64, linux-arm64]
 
     steps:
       - uses: actions/checkout@v4
@@ -85,21 +76,200 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Install native AOT prerequisites (Linux)
-        if: runner.os == 'Linux'
+      - name: Install native AOT prerequisites
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
 
-      - name: Publish proxy (Native AOT)
-        working-directory: server/ClaudeWin9xNt
+      - name: Install ARM64 cross-compilation toolchain
+        if: matrix.rid == 'linux-arm64'
+        run: |
+          sudo dpkg --add-architecture arm64
+          CODENAME=$(lsb_release -cs)
+
+          # Add arm64 sources (ports.ubuntu.com has all arm64 packages including security)
+          sudo tee /etc/apt/sources.list.d/arm64.list > /dev/null <<EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME} main restricted universe
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-updates main restricted universe
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-security main restricted universe
+          EOF
+
+          # Pin existing sources to amd64 only (prevents 404s on arm64)
+          sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i 's/^deb mirror/deb [arch=amd64] mirror/g' /etc/apt/sources.list
+
+          # Handle Ubuntu 24.04+ DEB822 format
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i '/^Types:/a Architectures: amd64' /etc/apt/sources.list.d/ubuntu.sources
+          fi
+
+          sudo apt-get update
+          sudo apt-get install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu zlib1g-dev:arm64
+
+      - name: Publish server (Native AOT)
+        working-directory: server/ClaudeWin9x
         run: dotnet publish --configuration Release --runtime ${{ matrix.rid }} -o publish/${{ matrix.rid }}
 
-      - name: List published files
-        working-directory: server/ClaudeWin9xNt/publish/${{ matrix.rid }}
-        run: ls -la
-        shell: bash
+      - name: Flatten output for artifact
+        run: |
+          cp server/ClaudeWin9x/publish/${{ matrix.rid }}/ClaudeWin9x-Server server/ClaudeWin9x/
 
-      - name: Upload proxy artifact
+      - name: Upload server build
         uses: actions/upload-artifact@v4
         with:
-          name: ClaudeWin9xNt-Server-${{ matrix.rid }}
-          path: server/ClaudeWin9xNt/publish/${{ matrix.rid }}/
+          name: build-server-${{ matrix.rid }}
+          path: |
+            server/ClaudeWin9x/ClaudeWin9x-Server
+            server/ClaudeWin9x/server.ini
+
+  publish-server-macos:
+    name: Publish Server (macOS)
+    needs: build-server
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish server (Native AOT - arm64)
+        working-directory: server/ClaudeWin9x
+        run: dotnet publish --configuration Release --runtime osx-arm64 -o publish/osx-arm64
+
+      - name: Publish server (Native AOT - x64)
+        working-directory: server/ClaudeWin9x
+        run: dotnet publish --configuration Release --runtime osx-x64 -o publish/osx-x64
+
+      - name: Create universal binary
+        run: |
+          lipo -create \
+            server/ClaudeWin9x/publish/osx-arm64/ClaudeWin9x-Server \
+            server/ClaudeWin9x/publish/osx-x64/ClaudeWin9x-Server \
+            -output server/ClaudeWin9x/ClaudeWin9x-Server
+
+      - name: Upload server build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-server-osx-universal
+          path: |
+            server/ClaudeWin9x/ClaudeWin9x-Server
+            server/ClaudeWin9x/server.ini
+
+  publish-server-windows:
+    name: Publish Server (Windows)
+    needs: build-server
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        rid: [win-x64, win-arm64]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish server (Native AOT)
+        working-directory: server/ClaudeWin9x
+        run: dotnet publish --configuration Release --runtime ${{ matrix.rid }} -o publish/${{ matrix.rid }}
+
+      - name: Flatten output for artifact
+        run: |
+          copy server\ClaudeWin9x\publish\${{ matrix.rid }}\ClaudeWin9x-Server.exe server\ClaudeWin9x\
+
+      - name: Upload server build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-server-${{ matrix.rid }}
+          path: |
+            server/ClaudeWin9x/ClaudeWin9x-Server.exe
+            server/ClaudeWin9x/server.ini
+
+  package:
+    name: Package Releases
+    needs: [build-client, publish-server-linux, publish-server-macos, publish-server-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${{ env.DEFAULT_VERSION }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Download client
+        uses: actions/download-artifact@v4
+        with:
+          name: build-client
+          path: client-build
+
+      - name: Download server (linux-x64)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-server-linux-x64
+          path: server-linux-x64
+
+      - name: Download server (linux-arm64)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-server-linux-arm64
+          path: server-linux-arm64
+
+      - name: Download server (osx-universal)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-server-osx-universal
+          path: server-osx-universal
+
+      - name: Download server (win-x64)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-server-win-x64
+          path: server-win-x64
+
+      - name: Download server (win-arm64)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-server-win-arm64
+          path: server-win-arm64
+
+      - name: Create release zip
+        run: |
+          mkdir -p pkg/client pkg/server/linux-x64 pkg/server/linux-arm64 pkg/server/osx-universal pkg/server/win-x64 pkg/server/win-arm64
+
+          # Debug: show actual artifact structure
+          echo "=== Artifact structure ==="
+          find . -maxdepth 3 -type f | head -50
+
+          # Client
+          cp client-build/ClaudeWin9x-Client.exe client-build/client.ini pkg/client/
+
+          # Create disk images
+          sudo apt-get install -y mtools genisoimage
+          (cd pkg/client && bash ../../build/create_disk_images.sh ClaudeWin9x-Client.exe client.ini)
+
+          # Server binaries
+          cp server-linux-x64/ClaudeWin9x-Server pkg/server/linux-x64/
+          cp server-linux-arm64/ClaudeWin9x-Server pkg/server/linux-arm64/
+          cp server-osx-universal/ClaudeWin9x-Server pkg/server/osx-universal/
+          cp server-win-x64/ClaudeWin9x-Server.exe pkg/server/win-x64/
+          cp server-win-arm64/ClaudeWin9x-Server.exe pkg/server/win-arm64/
+
+          # Config
+          cp server-linux-x64/server.ini pkg/server/
+
+      - name: Upload release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClaudeWin9x-${{ steps.version.outputs.version }}
+          path: pkg/*

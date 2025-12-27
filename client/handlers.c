@@ -536,7 +536,7 @@ static int execute_command_nt(const char *command, char *output,
 static int execute_command_9x(const char *command, char *output,
                               size_t output_size)
 {
-    char cmdline[1024];
+    char cmdline[2048];
     char temp_file[MAX_PATH];
     const char *temp_dir;
     FILE *fp;
@@ -626,7 +626,7 @@ int handle_command(void)
 
     cmd_id = cJSON_GetObjectItem(json, "cmd_id");
     command = cJSON_GetObjectItem(json, "command");
-    workdir = cJSON_GetObjectItem(json, "workdir");
+    workdir = cJSON_GetObjectItem(json, "working_directory");
 
     if (!cJSON_IsString(cmd_id) || !cJSON_IsString(command)) {
         log_error("handle_command", "malformed command request");

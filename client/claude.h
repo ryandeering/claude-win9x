@@ -48,6 +48,8 @@ typedef enum {
 typedef struct {
     char server_ip[64];
     int server_port;
+    int download_port;
+    int upload_port;
     char session_id[64];
     int connected;
     int running;

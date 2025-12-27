@@ -262,12 +262,19 @@ void config_load(const char *filename)
                             sizeof(g_state.server_ip) - 1);
                     g_state.server_ip[sizeof(g_state.server_ip) - 1] = '\0';
                     printf("[Config: server ip = %s]\n", g_state.server_ip);
-                } else if (strcmp(key, "port") == 0) {
+                } else if (strcmp(key, "api_port") == 0) {
                     g_state.server_port = atoi(value);
-                    printf("[Config: server port = %d]\n", g_state.server_port);
+                    printf("[Config: api port = %d]\n", g_state.server_port);
+                } else if (strcmp(key, "download_port") == 0) {
+                    g_state.download_port = atoi(value);
+                    printf("[Config: download port = %d]\n",
+                           g_state.download_port);
+                } else if (strcmp(key, "upload_port") == 0) {
+                    g_state.upload_port = atoi(value);
+                    printf("[Config: upload port = %d]\n", g_state.upload_port);
                 } else if (strcmp(key, "skip_permissions") == 0) {
-                    g_state.skip_permissions = (strcmp(value, "true") == 0 ||
-                                                strcmp(value, "1") == 0);
+                    g_state.skip_permissions =
+                        (strcmp(value, "true") == 0 || strcmp(value, "1") == 0);
                     printf("[Config: skip_permissions = %s]\n",
                            g_state.skip_permissions ? "true" : "false");
                 }

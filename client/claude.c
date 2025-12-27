@@ -13,6 +13,8 @@
 
 ClientState g_state = {.server_ip = "192.168.2.1",
                        .server_port = PORT_API,
+                       .download_port = PORT_FILE_DOWNLOAD,
+                       .upload_port = PORT_FILE_UPLOAD,
                        .session_id = "",
                        .connected = 0,
                        .running = 1,
@@ -49,12 +51,8 @@ static unsigned __stdcall poll_thread_func(void *param)
             continue;
         }
 
-        while (handle_fileop()) {
-        }
-
-        while (handle_command()) {
-        }
-
+        handle_fileop();
+        handle_command();
         poll_approval();
 
         snprintf(path, sizeof(path), "/output?session_id=%s", local_session_id);
@@ -135,12 +133,8 @@ static int poll_sync(void)
         return 0;
     }
 
-    while (handle_fileop()) {
-    }
-
-    while (handle_command()) {
-    }
-
+    handle_fileop();
+    handle_command();
     handle_approval();
 
     snprintf(path, sizeof(path), "/output?session_id=%s", g_state.session_id);
@@ -256,7 +250,8 @@ static void read_input_line(char *input, size_t input_size)
 static void print_banner(void)
 {
     printf("==================================================\n");
-    printf("  ClaudeWin9xNt - Claude Code CLI for Windows 9X/NT OSes\n");
+    printf("  ClaudeWin9x - Claude Code CLI for Windows 9X/NT OSes\n");
+    printf("  Written by Ryan Deering (github.com/ryandeering)\n");
     printf("  Type /help for commands\n");
     printf("==================================================\n");
     printf("\n");
