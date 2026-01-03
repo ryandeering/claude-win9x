@@ -6,9 +6,11 @@ Claude Code CLI access on Windows 95/98/2000/XP+ via a bridge server.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/ryandeering)
 
+📖 **[Read the blog post](https://ryandeering.ie/posts/claudewin9x/)**
+
 <br>
 
-> “Your scientists were so preoccupied with whether they could, they didn’t stop to think if they should.”
+> "Your scientists were so preoccupied with whether they could, they didn’t stop to think if they should.”
 > - Dr. Ian Malcolm, *Jurassic Park* (1993)
 
 <br>
@@ -121,4 +123,5 @@ Published as a native AOT binary - there's no runtime required (woo!). Requires 
 ## Third Party
 
 - [cJSON](https://github.com/DaveGamble/cJSON) - MIT
+- Special thanks to Romane for making the icons in theme with the old Windows style.
 
